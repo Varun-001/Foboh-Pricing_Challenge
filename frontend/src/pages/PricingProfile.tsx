@@ -4,9 +4,10 @@ import FilterBar from '../components/FilterBar'
 import ProductTable from '../components/ProductTable'
 import PriceAdjustmentForm, { type AdjustmentConfig } from '../components/PriceAdjustmentForm'
 import PricePreviewTable from '../components/PricePreviewTable'
+import ProfileList from '../components/ProfileList'
 import Toast, { type ToastData } from '../components/Toast'
-import { getProducts, createProfile } from '../api/client'
-import type { Product, ProductFilters } from '../types'
+import { getProducts, createProfile, updateProfile } from '../api/client'
+import type { Product, ProductFilters, PricingProfile } from '../types'
 
 const DEFAULT_FILTERS: ProductFilters = { search: '', subCategory: '', segment: '', brand: '' }
 const DEFAULT_CONFIG: AdjustmentConfig = { adjustmentType: 'fixed', direction: 'decrease', value: 0 }
@@ -39,14 +40,16 @@ function SectionHeader({
 }
 
 export default function PricingProfilePage() {
-  const [allProducts, setAllProducts]   = useState<Product[]>([])
-  const [filters, setFilters]           = useState<ProductFilters>(DEFAULT_FILTERS)
-  const [selectedIds, setSelectedIds]   = useState<Set<string>>(new Set())
-  const [config, setConfig]             = useState<AdjustmentConfig>(DEFAULT_CONFIG)
-  const [profileName, setProfileName]   = useState('')
-  const [profileDesc, setProfileDesc]   = useState('')
-  const [saving, setSaving]             = useState(false)
-  const [toasts, setToasts]             = useState<ToastData[]>([])
+  const [allProducts, setAllProducts]     = useState<Product[]>([])
+  const [filters, setFilters]             = useState<ProductFilters>(DEFAULT_FILTERS)
+  const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set())
+  const [config, setConfig]               = useState<AdjustmentConfig>(DEFAULT_CONFIG)
+  const [profileName, setProfileName]     = useState('')
+  const [profileDesc, setProfileDesc]     = useState('')
+  const [editingId, setEditingId]         = useState<string | null>(null)
+  const [saving, setSaving]               = useState(false)
+  const [listRefresh, setListRefresh]     = useState(0)
+  const [toasts, setToasts]               = useState<ToastData[]>([])
 
   useEffect(() => {
     getProducts().then(setAllProducts).catch(() => addToast('error', 'Failed to load products'))
@@ -64,13 +67,33 @@ export default function PricingProfilePage() {
   const selectedProducts = allProducts.filter((p) => selectedIds.has(p.id))
 
   const addToast = (type: 'success' | 'error', message: string) => {
-    const id = crypto.randomUUID()
-    setToasts((prev) => [...prev, { id, type, message }])
+    setToasts((prev) => [...prev, { id: crypto.randomUUID(), type, message }])
   }
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }, [])
+
+  const resetForm = () => {
+    setProfileName('')
+    setProfileDesc('')
+    setSelectedIds(new Set())
+    setConfig(DEFAULT_CONFIG)
+    setEditingId(null)
+  }
+
+  const handleEdit = (profile: PricingProfile) => {
+    setProfileName(profile.name)
+    setProfileDesc(profile.description ?? '')
+    setSelectedIds(new Set(profile.productIds))
+    setConfig({
+      adjustmentType: profile.adjustmentType,
+      direction: profile.direction,
+      value: profile.adjustment,
+    })
+    setEditingId(profile.id)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const handleToggle = (id: string) => {
     setSelectedIds((prev) => {
@@ -95,21 +118,26 @@ export default function PricingProfilePage() {
     if (!profileName.trim()) { addToast('error', 'Profile name is required'); return }
     if (selectedIds.size === 0) { addToast('error', 'Select at least one product'); return }
 
+    const payload = {
+      name: profileName.trim(),
+      description: profileDesc.trim() || undefined,
+      productIds: [...selectedIds],
+      adjustment: config.value,
+      adjustmentType: config.adjustmentType,
+      direction: config.direction,
+    }
+
     setSaving(true)
     try {
-      await createProfile({
-        name: profileName.trim(),
-        description: profileDesc.trim() || undefined,
-        productIds: [...selectedIds],
-        adjustment: config.value,
-        adjustmentType: config.adjustmentType,
-        direction: config.direction,
-      })
-      addToast('success', `Profile "${profileName}" saved successfully`)
-      setProfileName('')
-      setProfileDesc('')
-      setSelectedIds(new Set())
-      setConfig(DEFAULT_CONFIG)
+      if (editingId) {
+        await updateProfile(editingId, payload)
+        addToast('success', `Profile "${profileName}" updated`)
+      } else {
+        await createProfile(payload)
+        addToast('success', `Profile "${profileName}" saved`)
+      }
+      resetForm()
+      setListRefresh((n) => n + 1)
     } catch {
       addToast('error', 'Failed to save profile — please try again')
     } finally {
@@ -125,18 +153,23 @@ export default function PricingProfilePage() {
       <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
         <div>
           <p className="text-xs text-gray-400 mb-0.5">Pricing Profile</p>
-          <h1 className="text-lg font-semibold text-gray-800">Setup a Profile</h1>
+          <h1 className="text-lg font-semibold text-gray-800">
+            {editingId ? 'Edit Profile' : 'Setup a Profile'}
+          </h1>
         </div>
         <div className="flex gap-3">
-          <button className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            Cancel
+          <button
+            onClick={resetForm}
+            className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            {editingId ? 'Cancel Edit' : 'Cancel'}
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
             className="px-4 py-2 text-sm font-medium text-white bg-foboh-teal rounded-lg hover:bg-foboh-teal-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {saving ? 'Saving…' : 'Save Profile'}
+            {saving ? 'Saving…' : editingId ? 'Update Profile' : 'Save Profile'}
           </button>
         </div>
       </div>
@@ -182,24 +215,18 @@ export default function PricingProfilePage() {
             <SectionHeader step={2} title="Select Product Pricing" status="active" />
           </div>
           <div className="px-6 py-5 space-y-5">
-            {/* Filters */}
             <FilterBar products={allProducts} filters={filters} onChange={setFilters} />
-
-            {/* Product table */}
             <ProductTable
               products={filteredProducts}
               selectedIds={selectedIds}
               onToggle={handleToggle}
               onToggleAll={handleToggleAll}
             />
-
             {selectedIds.size > 0 && (
               <p className="text-xs text-gray-400">
                 {selectedIds.size} product{selectedIds.size !== 1 ? 's' : ''} selected
               </p>
             )}
-
-            {/* Adjustment controls */}
             <div className="pt-4 border-t border-gray-100">
               <h3 className="text-sm font-semibold text-gray-700 mb-4">Price Adjustment</h3>
               <PriceAdjustmentForm
@@ -208,8 +235,6 @@ export default function PricingProfilePage() {
                 onChange={setConfig}
               />
             </div>
-
-            {/* Preview table */}
             {selectedIds.size > 0 && (
               <div className="pt-4 border-t border-gray-100">
                 <h3 className="text-sm font-semibold text-gray-700 mb-4">Price Preview</h3>
@@ -223,6 +248,20 @@ export default function PricingProfilePage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden opacity-60">
           <div className="px-6 py-4">
             <SectionHeader step={3} title="Assign Customers to Pricing Profile" status="pending" />
+          </div>
+        </div>
+
+        {/* Saved Profiles */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-800">Saved Profiles</h2>
+          </div>
+          <div className="px-6 py-5">
+            <ProfileList
+              refreshTrigger={listRefresh}
+              onEdit={handleEdit}
+              onToast={addToast}
+            />
           </div>
         </div>
 
