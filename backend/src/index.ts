@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express'
 import productsRouter from './routes/products'
 import profilesRouter from './routes/profiles'
 import resolveRouter from './routes/resolve'
+import customersRouter from './routes/customers'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -30,6 +31,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 app.use('/api/products', productsRouter)
 app.use('/api/profiles', profilesRouter)
 app.use('/api/resolve', resolveRouter)
+app.use('/api/customers', customersRouter)
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)

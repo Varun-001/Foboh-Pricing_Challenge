@@ -5,6 +5,7 @@ import ProductTable from '../components/ProductTable'
 import PriceAdjustmentForm, { type AdjustmentConfig } from '../components/PriceAdjustmentForm'
 import PricePreviewTable from '../components/PricePreviewTable'
 import ProfileList from '../components/ProfileList'
+import PriceChecker from '../components/PriceChecker'
 import Toast, { type ToastData } from '../components/Toast'
 import { getProducts, createProfile, updateProfile } from '../api/client'
 import type { Product, ProductFilters, PricingProfile } from '../types'
@@ -250,6 +251,9 @@ export default function PricingProfilePage() {
             <SectionHeader step={3} title="Assign Customers to Pricing Profile" status="pending" />
           </div>
         </div>
+
+        {/* Price Checker */}
+        <PriceChecker />
 
         {/* Saved Profiles */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">

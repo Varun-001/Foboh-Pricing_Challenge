@@ -3,6 +3,9 @@ import type { Product, PricingProfile, ResolvedPrice } from '../types'
 
 const http = axios.create({ baseURL: '/api' })
 
+export const getCustomers = () =>
+  http.get<import('../types').Customer[]>('/customers').then((r) => r.data)
+
 export const getProducts = (params?: Record<string, string>) =>
   http.get<Product[]>('/products', { params }).then((r) => r.data)
 
