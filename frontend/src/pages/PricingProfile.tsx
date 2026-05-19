@@ -153,7 +153,13 @@ export default function PricingProfilePage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
         <div>
-          <p className="text-xs text-gray-400 mb-0.5">Pricing Profile</p>
+          <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-1">
+            <span>Pricing</span>
+            <span>›</span>
+            <span className="text-gray-600 font-medium">
+              {editingId ? 'Edit Profile' : 'Setup a Profile'}
+            </span>
+          </nav>
           <h1 className="text-lg font-semibold text-gray-800">
             {editingId ? 'Edit Profile' : 'Setup a Profile'}
           </h1>
@@ -175,7 +181,7 @@ export default function PricingProfilePage() {
         </div>
       </div>
 
-      <div className="flex-1 px-8 py-6 space-y-4 max-w-5xl w-full mx-auto">
+      <div className="flex-1 px-8 py-6 pb-16 space-y-4 max-w-5xl w-full mx-auto">
 
         {/* Step 1 — Basic Info */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -246,9 +252,12 @@ export default function PricingProfilePage() {
         </div>
 
         {/* Step 3 — Assign Customers (placeholder) */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden opacity-60">
-          <div className="px-6 py-4">
+        <div className="bg-white rounded-xl border border-dashed border-gray-200 overflow-hidden opacity-70">
+          <div className="px-6 py-4 border-b border-gray-100">
             <SectionHeader step={3} title="Assign Customers to Pricing Profile" status="pending" />
+          </div>
+          <div className="px-6 py-4 text-sm text-gray-400 italic">
+            Save the profile first, then assign customers or groups.
           </div>
         </div>
 

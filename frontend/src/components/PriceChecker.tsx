@@ -44,8 +44,8 @@ export default function PriceChecker() {
   const selectedProduct = products.find((p) => p.id === productId)
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+    <div className="bg-white rounded-xl border border-foboh-teal/20 shadow-sm overflow-hidden ring-1 ring-foboh-teal/10">
+      <div className="px-6 py-4 border-b border-foboh-teal/10 bg-foboh-teal-bg/40 flex items-center gap-2">
         <Search size={16} className="text-foboh-teal" />
         <h2 className="font-semibold text-gray-800">Price Checker</h2>
         <span className="ml-auto text-xs text-gray-400">Demos the precedence resolver</span>

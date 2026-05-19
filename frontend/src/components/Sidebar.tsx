@@ -24,8 +24,11 @@ export default function Sidebar() {
   return (
     <aside className="flex flex-col w-56 min-h-screen bg-foboh-teal-dark flex-shrink-0">
       {/* Logo */}
-      <div className="px-5 py-6 border-b border-foboh-teal/30">
-        <span className="text-white font-bold text-xl tracking-tight">FOBOH</span>
+      <div className="px-5 py-5 border-b border-foboh-teal/30 flex items-center gap-2">
+        <div className="w-7 h-7 rounded-lg bg-foboh-teal-light flex items-center justify-center">
+          <span className="text-white font-black text-xs">F</span>
+        </div>
+        <span className="text-white font-bold text-lg tracking-tight">FOBOH</span>
       </div>
 
       {/* Nav */}
@@ -36,8 +39,8 @@ export default function Sidebar() {
             className={`
               flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
               ${active
-                ? 'bg-foboh-teal text-white'
-                : 'text-teal-100/80 hover:bg-foboh-teal/40 hover:text-white'
+                ? 'bg-foboh-teal text-white shadow-sm'
+                : 'text-teal-100/70 hover:bg-white/10 hover:text-white'
               }
             `}
           >
