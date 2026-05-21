@@ -18,8 +18,8 @@ function App() {
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <TopHeader onMenuClick={() => setSidebarOpen(true)} />
 
-          {/* Wrapper gives Routes children a proper flex-col context */}
-          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Single scroll container — all pages scroll here */}
+          <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50">
             <Routes>
               <Route path="/" element={<Navigate to="/pricing" replace />} />
               <Route path="/pricing" element={<PricingHome />} />

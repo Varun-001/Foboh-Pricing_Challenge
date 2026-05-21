@@ -192,7 +192,7 @@ export default function PricingProfilePage() {
   )
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50 overflow-y-auto min-h-0">
+    <div className="flex flex-col min-h-full bg-gray-50">
       {/* Page header */}
       <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-start justify-between flex-shrink-0">
         <div>
@@ -220,7 +220,7 @@ export default function PricingProfilePage() {
       </div>
 
       {/* Wizard content */}
-      <div className="flex-1 px-4 md:px-6 py-6 space-y-3">
+      <div className="px-4 md:px-6 py-6 space-y-3">
 
         {/* ── Step 1: Basic Info ── */}
         {stepDone('basicInfo') ? (

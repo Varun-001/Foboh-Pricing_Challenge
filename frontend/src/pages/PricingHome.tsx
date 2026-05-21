@@ -19,7 +19,7 @@ export default function PricingHome() {
   }, [])
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50 overflow-y-auto min-h-0">
+    <div className="flex flex-col min-h-full">
       {/* Page header */}
       <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div>

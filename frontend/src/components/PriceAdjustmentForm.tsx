@@ -25,23 +25,18 @@ function RadioGroup({ label, options, value, onChange }: RadioGroupProps) {
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{label}</p>
       <div className="flex gap-2 flex-wrap">
         {options.map((opt) => (
-          <label
+          <button
             key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm cursor-pointer transition-colors ${
               value === opt.value
                 ? 'bg-foboh-teal text-white border-foboh-teal'
                 : 'bg-white text-gray-600 border-gray-200 hover:border-foboh-teal/50'
             }`}
           >
-            <input
-              type="radio"
-              className="sr-only"
-              value={opt.value}
-              checked={value === opt.value}
-              onChange={() => onChange(opt.value)}
-            />
             {opt.label}
-          </label>
+          </button>
         ))}
       </div>
     </div>
