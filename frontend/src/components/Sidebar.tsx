@@ -1,3 +1,4 @@
+import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -7,66 +8,85 @@ import {
   Truck,
   Plug,
   Settings,
+  X,
 } from 'lucide-react'
 
 const navItems = [
-  { label: 'Dashboard',    icon: LayoutDashboard, active: false },
-  { label: 'Orders',       icon: ShoppingCart,    active: false },
-  { label: 'Customers',    icon: Users,           active: false },
-  { label: 'Products',     icon: Package,         active: false },
-  { label: 'Pricing',      icon: Tag,             active: true  },
-  { label: 'Freight',      icon: Truck,           active: false, badge: 'NEW' },
-  { label: 'Integrations', icon: Plug,            active: false },
-  { label: 'Settings',     icon: Settings,        active: false },
+  { label: 'Dashboard',    icon: LayoutDashboard, to: '/dashboard' },
+  { label: 'Orders',       icon: ShoppingCart,    to: '/orders' },
+  { label: 'Customers',    icon: Users,           to: '/customers' },
+  { label: 'Products',     icon: Package,         to: '/products' },
+  { label: 'Pricing',      icon: Tag,             to: '/pricing' },
+  { label: 'Freight',      icon: Truck,           to: '/freight', badge: 'NEW' },
+  { label: 'Integrations', icon: Plug,            to: '/integrations' },
+  { label: 'Settings',     icon: Settings,        to: '/settings' },
 ]
 
-export default function Sidebar() {
+interface Props {
+  isOpen: boolean
+  onClose: () => void
+}
+
+export default function Sidebar({ isOpen, onClose }: Props) {
   return (
-    <aside className="flex flex-col w-56 min-h-screen bg-foboh-teal-dark flex-shrink-0">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-foboh-teal/30 flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-foboh-teal-light flex items-center justify-center">
-          <span className="text-white font-black text-xs">F</span>
-        </div>
-        <span className="text-white font-bold text-lg tracking-tight">FOBOH</span>
-      </div>
+    <>
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 md:hidden"
+          onClick={onClose}
+        />
+      )}
 
-      {/* Nav */}
-      <nav className="flex flex-col gap-0.5 px-3 py-4 flex-1">
-        {navItems.map(({ label, icon: Icon, active, badge }) => (
-          <button
-            key={label}
-            className={`
-              flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
-              ${active
-                ? 'bg-foboh-teal text-white shadow-sm'
-                : 'text-teal-100/70 hover:bg-white/10 hover:text-white'
-              }
-            `}
-          >
-            <Icon size={18} strokeWidth={1.8} />
-            <span className="flex-1 text-left">{label}</span>
-            {badge && (
-              <span className="text-[10px] font-bold bg-amber-400 text-amber-900 px-1.5 py-0.5 rounded-full leading-none">
-                {badge}
-              </span>
-            )}
+      {/* Sidebar panel */}
+      <aside
+        className={`
+          fixed md:static inset-y-0 left-0 z-40
+          flex flex-col w-56 h-full bg-white border-r border-gray-200
+          transform transition-transform duration-200 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
+        {/* Mobile close button */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 md:hidden">
+          <span className="font-bold text-foboh-teal text-lg">FOBOH</span>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={20} />
           </button>
-        ))}
-      </nav>
-
-      {/* Bottom user avatar placeholder */}
-      <div className="px-5 py-4 border-t border-foboh-teal/30">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-foboh-teal-light flex items-center justify-center text-white text-xs font-bold">
-            VG
-          </div>
-          <div className="text-teal-100/80 text-xs">
-            <p className="font-medium text-white">Varun Goel</p>
-            <p>Supplier</p>
-          </div>
         </div>
-      </div>
-    </aside>
+
+        {/* Nav */}
+        <nav className="flex flex-col gap-0.5 px-2 py-3 flex-1 overflow-y-auto">
+          {navItems.map(({ label, icon: Icon, to, badge }) => (
+            <NavLink
+              key={label}
+              to={to}
+              onClick={onClose}
+              className={({ isActive }) => `
+                flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
+                border-l-[3px] pl-[calc(0.75rem-3px)]
+                ${isActive
+                  ? 'border-foboh-teal text-foboh-teal bg-foboh-teal-bg'
+                  : 'border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                }
+              `}
+            >
+              <Icon size={17} strokeWidth={1.8} />
+              <span className="flex-1">{label}</span>
+              {badge && (
+                <span className="text-[10px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded-full leading-none">
+                  {badge}
+                </span>
+              )}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* FOBOH logo — bottom left, matching Figma */}
+        <div className="px-4 py-5 border-t border-gray-100 text-center">
+          <span className="text-foboh-teal font-black text-2xl tracking-tight">FOBOH</span>
+        </div>
+      </aside>
+    </>
   )
 }
