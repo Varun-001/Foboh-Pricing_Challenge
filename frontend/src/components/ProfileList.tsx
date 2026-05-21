@@ -8,6 +8,7 @@ interface Props {
   refreshTrigger: number
   onEdit: (profile: PricingProfile) => void
   onToast: (type: 'success' | 'error', message: string) => void
+  onDeleted?: () => void
 }
 
 function adjustmentSummary(p: PricingProfile): string {
@@ -18,7 +19,7 @@ function adjustmentSummary(p: PricingProfile): string {
   return `${dir}${val} (${p.adjustmentType})`
 }
 
-export default function ProfileList({ refreshTrigger, onEdit, onToast }: Props) {
+export default function ProfileList({ refreshTrigger, onEdit, onToast, onDeleted }: Props) {
   const [profiles, setProfiles]       = useState<PricingProfile[]>([])
   const [loading, setLoading]         = useState(true)
   const [confirmId, setConfirmId]     = useState<string | null>(null)
@@ -38,6 +39,7 @@ export default function ProfileList({ refreshTrigger, onEdit, onToast }: Props) 
     try {
       await deleteProfile(confirmId)
       onToast('success', 'Profile deleted')
+      onDeleted?.()
       load()
     } catch {
       onToast('error', 'Failed to delete profile')

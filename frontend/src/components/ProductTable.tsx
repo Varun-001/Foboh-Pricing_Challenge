@@ -22,10 +22,18 @@ export default function ProductTable({ products, selectedIds, onToggle, onToggle
 
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm table-fixed">
+        <colgroup>
+          <col className="w-12" />
+          <col className="w-14" />
+          <col />
+          <col className="w-36" />
+          <col className="w-44" />
+          <col className="w-28" />
+        </colgroup>
         <thead>
           <tr className="bg-gray-50 border-b border-gray-200">
-            <th className="w-10 px-4 py-3">
+            <th className="px-4 py-3">
               <input
                 type="checkbox"
                 checked={allSelected}
@@ -34,7 +42,7 @@ export default function ProductTable({ products, selectedIds, onToggle, onToggle
                 className="rounded border-gray-300 text-foboh-teal focus:ring-foboh-teal/30 cursor-pointer"
               />
             </th>
-            <th className="w-12 px-2 py-3" />
+            <th className="px-2 py-3" />
             <th className="px-4 py-3 text-left font-semibold text-gray-600 tracking-wide uppercase text-xs">
               Product / SKU
             </th>

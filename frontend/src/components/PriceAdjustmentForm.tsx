@@ -12,15 +12,6 @@ interface Props {
   onChange: (config: AdjustmentConfig) => void
 }
 
-function calcNewPrice(basePrice: number, config: AdjustmentConfig): number {
-  const delta =
-    config.adjustmentType === 'fixed'
-      ? config.value
-      : (config.value / 100) * basePrice
-  const raw = config.direction === 'increase' ? basePrice + delta : basePrice - delta
-  return Math.max(0.01, Math.round(raw * 100) / 100)
-}
-
 type RadioGroupProps = {
   label: string
   options: { value: string; label: string }[]
@@ -59,7 +50,6 @@ function RadioGroup({ label, options, value, onChange }: RadioGroupProps) {
 
 export default function PriceAdjustmentForm({ selectedProducts, config, onChange }: Props) {
   const wouldFloor = config.value > 0 && selectedProducts.some((p) => {
-    const newPrice = calcNewPrice(p.basePrice, config)
     const delta =
       config.adjustmentType === 'fixed'
         ? config.value
