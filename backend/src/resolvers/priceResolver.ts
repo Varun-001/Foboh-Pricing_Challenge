@@ -11,22 +11,38 @@ function calcPrice(basePrice: number, profile: PricingProfile): number {
   return Math.max(0.01, Math.round(raw * 100) / 100)
 }
 
-// Specificity rules (specificity-wins precedence):
-//   3 — customer-specific (customerId set)
-//   2 — sub-category group (all profile products share one subCategory)
-//   1 — broad category group (products span multiple subCategories)
+// // Specificity rules (specificity-wins precedence):
+// //   3 — customer-specific (customerId set)
+// //   2 — sub-category group (all profile products share one subCategory)
+// //   1 — broad category group (products span multiple subCategories)
+// function specificity(profile: PricingProfile): number {
+//   if (profile.customerId) return 3
+
+//   const subCats = new Set(
+//     profile.productIds
+//       .map((id) => store.products.find((p) => p.id === id))
+//       .filter(Boolean)
+//       .map((p) => p!.subCategory)
+//   )
+
+//   console.log(`subCats for profile ${profile.name}:`, subCats);
+//   return subCats.size === 1 ? 2 : 1
+// }
+
+
+// Specificity-wins precedence — ranked by AUDIENCE (who the profile targets):
+//   3 — customer-specific  (customerId set: a deliberate, named-customer deal)
+//   2 — group-level        (groupIds set: applies to one or more customer groups)
+//   1 — everyone / broad    (no customerId and no groupIds: applies to all customers)
+//
+// A more specific audience always beats a broader one, regardless of price.
+// A named-customer price is a deliberate decision (negotiated rate, contract,
+// bundled terms) and must not be silently overridden by a broader group discount.
 function specificity(profile: PricingProfile): number {
   if (profile.customerId) return 3
-
-  const subCats = new Set(
-    profile.productIds
-      .map((id) => store.products.find((p) => p.id === id))
-      .filter(Boolean)
-      .map((p) => p!.subCategory)
-  )
-  return subCats.size === 1 ? 2 : 1
+  if (profile.groupIds && profile.groupIds.length > 0) return 2
+  return 1
 }
-
 function reasonString(profile: PricingProfile, score: number): string {
   if (score === 3) return `Customer-specific profile '${profile.name}' applied — highest specificity`
   if (score === 2) return `Sub-category profile '${profile.name}' applied — mid specificity`
@@ -50,6 +66,8 @@ export function resolvePrice(customerId: string, productId: string): ResolvedPri
     return false
   })
 
+  console.log("matching", matching);
+
   if (matching.length === 0) return null
 
   const scored = matching.map((profile) => ({
@@ -57,6 +75,8 @@ export function resolvePrice(customerId: string, productId: string): ResolvedPri
     score: specificity(profile),
     price: calcPrice(product.basePrice, profile),
   }))
+
+  console.log("scored", scored);
 
   // Sort: highest specificity first; tiebreak lowest price; tiebreak most recent creation
   scored.sort((a, b) => {
