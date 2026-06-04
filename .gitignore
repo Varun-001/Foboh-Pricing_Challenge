@@ -3,3 +3,7 @@ dist/
 .env
 .DS_Store
 FOBOH_CHALLENGE.md
+
+# local-only: interview prep notes + implementation plans
+PREP/
+docs/superpowers/plans/
