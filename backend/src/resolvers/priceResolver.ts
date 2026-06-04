@@ -37,6 +37,12 @@ function specificity(profile: ProfileLike): number {
   return 1
 }
 
+// Fewer products targeted = more specific. An "all wine" profile stores many
+// productIds; a single-product profile stores one. Lower count wins.
+function productSpecificity(profile: ProfileLike): number {
+  return profile.productIds.length
+}
+
 function reasonString(profile: ProfileLike, score: number): string {
   if (score === 3) return `Customer-specific profile '${profile.name}' applied — highest specificity`
   if (score === 2) return `Group profile '${profile.name}' applied — mid specificity`
@@ -84,15 +90,32 @@ export async function resolvePrice(
 
   scored.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score
+    // Within an audience tier, the narrower product scope is more specific.
+    const aProd = productSpecificity(a.profile)
+    const bProd = productSpecificity(b.profile)
+    if (aProd !== bProd) return aProd - bProd
     if (a.price !== b.price) return a.price - b.price
     return new Date(b.profile.createdAt).getTime() - new Date(a.profile.createdAt).getTime()
   })
 
   const winner = scored[0]
+  const runnerUp = scored[1]
+  // If a same-audience runner-up was beaten purely on product breadth, say so.
+  const decidedByProduct =
+    runnerUp &&
+    runnerUp.score === winner.score &&
+    productSpecificity(winner.profile) < productSpecificity(runnerUp.profile)
+
+  const reason = decidedByProduct
+    ? `${reasonString(winner.profile, winner.score)} — narrower product scope (` +
+      `${productSpecificity(winner.profile)} product${productSpecificity(winner.profile) === 1 ? '' : 's'}) ` +
+      `beat '${runnerUp.profile.name}' (${productSpecificity(runnerUp.profile)} products) at the same audience level`
+    : reasonString(winner.profile, winner.score)
+
   return {
     price: winner.price,
     sourceProfileId: winner.profile.id,
     profileName: winner.profile.name,
-    reason: reasonString(winner.profile, winner.score),
+    reason,
   }
 }

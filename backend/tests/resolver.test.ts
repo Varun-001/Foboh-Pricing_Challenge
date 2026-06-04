@@ -37,4 +37,38 @@ describe('resolvePrice', () => {
     const result = await resolvePrice(ctx, 'nonexistent-customer', String(product!._id))
     expect(result).toBeNull()
   })
+
+  it('within the same audience tier, the narrower product scope wins even when broader is cheaper', async () => {
+    const product = await ProductModel.findOne({ tenantId: 'tA', sku: 'KOY' })
+    const pid = String(product!._id)
+    // A second product so the broad profile genuinely targets more than one.
+    const other = await ProductModel.create({ tenantId: 'tA', title: 'Other', sku: 'OTH', brand: 'b', subCategory: 'Wine White', segment: 'Wine', basePrice: 100 })
+
+    const cust = await CustomerModel.create({ tenantId: 'tA', name: 'Group Buyer', groupIds: ['g-x'] })
+
+    // Broad group profile: 2 products, cheaper ($10 off -> $110)
+    await PricingProfileModel.create({ tenantId: 'tA', name: 'Broad', productIds: [pid, String(other._id)], adjustment: 10, adjustmentType: 'fixed', direction: 'decrease', groupIds: ['g-x'], createdAt: '2026-03-01T10:00:00Z' })
+    // Narrow group profile: 1 product, dearer ($5 off -> $115)
+    await PricingProfileModel.create({ tenantId: 'tA', name: 'Narrow', productIds: [pid], adjustment: 5, adjustmentType: 'fixed', direction: 'decrease', groupIds: ['g-x'], createdAt: '2026-03-02T10:00:00Z' })
+
+    const result = await resolvePrice({ tenantId: 'tA', userId: 'u', role: 'owner' }, String(cust._id), pid)
+    expect(result?.profileName).toBe('Narrow')
+    expect(result?.price).toBe(115)
+    expect(result?.reason).toMatch(/narrower product scope/i)
+  })
+
+  it('audience stays primary: a customer profile targeting many products beats a group profile targeting one', async () => {
+    const product = await ProductModel.findOne({ tenantId: 'tA', sku: 'KOY' })
+    const pid = String(product!._id)
+    const other = await ProductModel.create({ tenantId: 'tA', title: 'Other2', sku: 'OTH2', brand: 'b', subCategory: 'Wine White', segment: 'Wine', basePrice: 100 })
+    const cust = await CustomerModel.create({ tenantId: 'tA', name: 'Mixed Buyer', groupIds: ['g-y'] })
+
+    // Group profile, narrow (1 product)
+    await PricingProfileModel.create({ tenantId: 'tA', name: 'GroupNarrow', productIds: [pid], adjustment: 5, adjustmentType: 'fixed', direction: 'decrease', groupIds: ['g-y'], createdAt: '2026-03-01T10:00:00Z' })
+    // Customer profile, broad (2 products) — still wins because audience is primary
+    await PricingProfileModel.create({ tenantId: 'tA', name: 'CustBroad', productIds: [pid, String(other._id)], adjustment: 1, adjustmentType: 'fixed', direction: 'decrease', customerId: String(cust._id), createdAt: '2026-03-02T10:00:00Z' })
+
+    const result = await resolvePrice({ tenantId: 'tA', userId: 'u', role: 'owner' }, String(cust._id), pid)
+    expect(result?.profileName).toBe('CustBroad')
+  })
 })
