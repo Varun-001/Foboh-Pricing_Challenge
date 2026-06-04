@@ -37,21 +37,17 @@ const router = Router()
  *       404:
  *         description: Customer or product not found, or no matching profile
  */
-router.get('/', (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   const { customerId, productId } = req.query as Record<string, string>
-
   if (!customerId || !productId) {
     res.status(400).json({ error: 'customerId and productId are required' })
     return
   }
-
-  const result = resolvePrice(customerId, productId)
-
+  const result = await resolvePrice((req as any).context, customerId, productId)
   if (!result) {
     res.status(404).json({ error: 'No matching profile found for this customer and product' })
     return
   }
-
   res.json(result)
 })
 

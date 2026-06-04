@@ -56,3 +56,29 @@ export interface PricePreviewItem {
   direction: AdjustmentDirection
 }
 
+export type Role = 'owner' | 'staff'
+export type IsolationMode = 'shared' | 'dedicated'
+
+export interface Tenant {
+  id: string
+  name: string
+  slug: string            // subdomain, e.g. "acme" in acme.foboh.app
+  isolationMode: IsolationMode
+  createdAt: string
+}
+
+export interface User {
+  id: string
+  tenantId: string
+  email: string
+  role: Role
+  createdAt: string
+}
+
+// Built by the middleware chain; the only tenancy info business logic sees.
+export interface TenantContext {
+  tenantId: string
+  userId: string
+  role: Role
+}
+
