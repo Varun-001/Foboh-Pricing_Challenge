@@ -95,11 +95,20 @@ like this:
 In the scenario, Profile C is tied to a single named customer, so it's the most
 specific. Bondi Cellars pays $95.
 
-**If two profiles are equally specific**, the one that gives the customer the lower
-price wins. The reasoning there: if a supplier set up two group-level discounts that
-both apply, they've effectively agreed to both, and the customer should get the better
-deal. The tiebreaker only kicks in within the same specificity level — it never lets a
-broad discount beat a specific one.
+**If two profiles share the same audience tier**, I break the tie by *product*
+specificity first: the profile targeting fewer products wins. A profile set up for one
+named product is a more deliberate decision than one blanketing a whole segment, so the
+narrow one should win even if the broad one happens to be cheaper. The full ordering is:
+
+1. **Audience** — customer-specific > group > everyone (the primary axis)
+2. **Product breadth** — fewer products targeted wins, within the same audience tier
+3. **Price** — lower final price to the customer
+4. **Recency** — most recently created profile
+
+This closes the original gap in the rule: at first it ranked only by audience, so a
+single-product profile and a whole-segment profile were treated identically within a
+tier. Audience is still primary — product breadth never lets a broad-audience discount
+beat a specific-audience one; it only decides ties *inside* a tier, ahead of price.
 
 I wrote the resolver so it doesn't just return a number. It returns the price, which
 profile won, and a plain-English reason. If a supplier ever asks "why is this customer
