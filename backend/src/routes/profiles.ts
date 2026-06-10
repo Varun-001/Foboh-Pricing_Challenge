@@ -1,7 +1,5 @@
 import { Router, Request, Response } from 'express'
-import { randomUUID } from 'crypto'
-import { store } from '../data/seed'
-import { PricingProfile } from '../types'
+import { listProfiles, createProfile, updateProfile, deleteProfile } from '../services/profileService'
 
 const router = Router()
 
@@ -9,14 +7,14 @@ const router = Router()
  * @openapi
  * /profiles:
  *   get:
- *     summary: List all pricing profiles
+ *     summary: List all pricing profiles (tenant-scoped)
  *     tags: [Profiles]
  *     responses:
  *       200:
  *         description: Array of pricing profiles
  */
-router.get('/', (_req: Request, res: Response) => {
-  res.json(store.profiles)
+router.get('/', async (req: Request, res: Response) => {
+  res.json(await listProfiles((req as any).context))
 })
 
 /**
@@ -47,28 +45,13 @@ router.get('/', (_req: Request, res: Response) => {
  *       400:
  *         description: Missing required fields
  */
-router.post('/', (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   const { name, productIds, adjustment, adjustmentType, direction } = req.body
-
   if (!name || !productIds || adjustment === undefined || !adjustmentType || !direction) {
     res.status(400).json({ error: 'Missing required fields: name, productIds, adjustment, adjustmentType, direction' })
     return
   }
-
-  const profile: PricingProfile = {
-    id: randomUUID(),
-    name,
-    description: req.body.description,
-    productIds,
-    adjustment: Number(adjustment),
-    adjustmentType,
-    direction,
-    customerId: req.body.customerId,
-    groupIds: req.body.groupIds,
-    createdAt: new Date().toISOString(),
-  }
-
-  store.profiles.push(profile)
+  const profile = await createProfile((req as any).context, req.body)
   res.status(201).json(profile)
 })
 
@@ -95,15 +78,13 @@ router.post('/', (req: Request, res: Response) => {
  *       404:
  *         description: Profile not found
  */
-router.put('/:id', (req: Request, res: Response) => {
-  const idx = store.profiles.findIndex((p) => p.id === req.params.id)
-  if (idx === -1) {
+router.put('/:id', async (req: Request, res: Response) => {
+  const updated = await updateProfile((req as any).context, String(req.params.id), req.body)
+  if (!updated) {
     res.status(404).json({ error: 'Profile not found' })
     return
   }
-
-  store.profiles[idx] = { ...store.profiles[idx], ...req.body, id: req.params.id }
-  res.json(store.profiles[idx])
+  res.json(updated)
 })
 
 /**
@@ -123,14 +104,12 @@ router.put('/:id', (req: Request, res: Response) => {
  *       404:
  *         description: Profile not found
  */
-router.delete('/:id', (req: Request, res: Response) => {
-  const idx = store.profiles.findIndex((p) => p.id === req.params.id)
-  if (idx === -1) {
+router.delete('/:id', async (req: Request, res: Response) => {
+  const deleted = await deleteProfile((req as any).context, String(req.params.id))
+  if (!deleted) {
     res.status(404).json({ error: 'Profile not found' })
     return
   }
-
-  store.profiles.splice(idx, 1)
   res.status(204).send()
 })
 

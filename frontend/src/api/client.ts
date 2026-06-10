@@ -3,6 +3,28 @@ import type { Product, PricingProfile, ResolvedPrice } from '../types'
 
 const http = axios.create({ baseURL: '/api' })
 
+// Inject the JWT and tenant slug on every request.
+http.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  const tenantSlug = localStorage.getItem('tenantSlug')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (tenantSlug) config.headers['X-Tenant-Slug'] = tenantSlug
+  return config
+})
+
+// On an expired/invalid session, clear and bounce to login.
+http.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('tenantSlug')
+      if (window.location.pathname !== '/login') window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  },
+)
+
 export const getCustomers = () =>
   http.get<import('../types').Customer[]>('/customers').then((r) => r.data)
 

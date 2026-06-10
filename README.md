@@ -95,11 +95,20 @@ like this:
 In the scenario, Profile C is tied to a single named customer, so it's the most
 specific. Bondi Cellars pays $95.
 
-**If two profiles are equally specific**, the one that gives the customer the lower
-price wins. The reasoning there: if a supplier set up two group-level discounts that
-both apply, they've effectively agreed to both, and the customer should get the better
-deal. The tiebreaker only kicks in within the same specificity level — it never lets a
-broad discount beat a specific one.
+**If two profiles share the same audience tier**, I break the tie by *product*
+specificity first: the profile targeting fewer products wins. A profile set up for one
+named product is a more deliberate decision than one blanketing a whole segment, so the
+narrow one should win even if the broad one happens to be cheaper. The full ordering is:
+
+1. **Audience** — customer-specific > group > everyone (the primary axis)
+2. **Product breadth** — fewer products targeted wins, within the same audience tier
+3. **Price** — lower final price to the customer
+4. **Recency** — most recently created profile
+
+This closes the original gap in the rule: at first it ranked only by audience, so a
+single-product profile and a whole-segment profile were treated identically within a
+tier. Audience is still primary — product breadth never lets a broad-audience discount
+beat a specific-audience one; it only decides ties *inside* a tier, ahead of price.
 
 I wrote the resolver so it doesn't just return a number. It returns the price, which
 profile won, and a plain-English reason. If a supplier ever asks "why is this customer
@@ -228,6 +237,63 @@ that's hard to see otherwise.
 I kept the data model deliberately simple. A profile has an optional `customerId`, an
 optional `groupIds`, and if neither is set it applies to everyone. That's the whole
 targeting model.
+
+---
+
+## Productionising it — multi-tenancy + auth
+
+The take-home runs on an in-memory store with no users. This branch turns it into a
+multi-tenant, authenticated service — the part an interviewer asks about when they say
+"how would you ship this?"
+
+**Persistence.** MongoDB via Mongoose (matches FOBOH's stack). Run a local Mongo, then:
+
+```bash
+cd backend
+cp .env.example .env          # MONGO_URI, JWT_SECRET, PORT
+npm install
+npm run seed                  # creates two isolated tenants
+npm run dev
+```
+
+**Multi-tenancy — shared DB, row-level (`tenantId`).** One database, every document
+tagged with `tenantId`. This is the default that scales (Slack/Shopify/GitHub), as
+opposed to a database-per-tenant (strong physical isolation, but connection-pool blowup,
+migrations × N, and no cross-tenant analytics — reserved for the rare compliance
+customer). The `Tenant.isolationMode` field plus a single enforcement seam are designed
+so a tenant *could* be promoted to a dedicated DB later without touching business logic.
+
+**The enforcement choke point.** All tenant-scoped data access goes through one helper,
+[`forTenant(ctx, Model)`](backend/src/lib/tenantScope.ts). It derives `tenantId` from the
+request context — never from the request body — so a query physically cannot read or
+write another tenant's data, and there is exactly one file to audit. A spoofed
+`tenantId` in a create payload is overridden.
+
+**Auth — subdomain selects, JWT proves.** Three middleware run in order:
+[`resolveTenant`](backend/src/middleware/resolveTenant.ts) maps the subdomain
+(`acme.foboh.app`, or `X-Tenant-Slug` in dev) to a tenant;
+[`authenticate`](backend/src/middleware/authenticate.ts) verifies the bearer JWT;
+[`authorizeTenant`](backend/src/middleware/authorizeTenant.ts) asserts the token's
+`tenantId` matches the subdomain's tenant — so a valid Acme token cannot be replayed
+against Globex's subdomain (403). Passwords are bcrypt-hashed; the first user registered
+for a tenant becomes `owner`.
+
+**The resolver is unchanged.** The specificity-wins logic — the core decision this
+challenge was judged on — is preserved verbatim. Only its data source changed: it is now
+`async` and reads through `forTenant`, so another supplier's profiles can never enter the
+candidate set.
+
+**Two seeded tenants prove it.** `acme` and `globex` each get their own products,
+customers, and overlapping profiles. Log into one (`owner@acme.com` / `password123`) and
+you cannot see the other's data. The brief scenario still resolves Bondi Cellars to $95.
+
+**Tests** (`npm test`, in-memory Mongo — no local DB needed): resolver returns $95 after
+the port, `forTenant` isolation, and HTTP-level guards (401 missing token, 403
+cross-tenant token, 401 wrong password).
+
+**Deliberately deferred:** refresh tokens / rotation (single short-lived JWT today),
+self-serve tenant signup (seed/admin creates tenants), and actually exercising the
+dedicated-DB promotion (the seam is designed, not wired).
 
 ---
 
